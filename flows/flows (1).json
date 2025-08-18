@@ -1,0 +1,162 @@
+[
+    {
+        "id": "flow_mqtt_mongo_1",
+        "type": "tab",
+        "label": "MQTT -> MongoDB (chuva)",
+        "disabled": false,
+        "info": "Fluxo: recebe esp32/sensorChuva (digital) e esp32/sensorChuva/analog (analógico) e insere documentos em EstacaoMeteorologica.chuva"
+    },
+    {
+        "id": "mqtt_in_analog",
+        "type": "mqtt in",
+        "z": "flow_mqtt_mongo_1",
+        "name": "Analog In (esp32/sensorChuva/analog)",
+        "topic": "esp32/sensorChuva/analog",
+        "qos": "0",
+        "datatype": "auto",
+        "broker": "dfb4e51f59f1317e",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "store_analog_fn"
+            ]
+        ]
+    },
+    {
+        "id": "store_analog_fn",
+        "type": "function",
+        "z": "flow_mqtt_mongo_1",
+        "name": "storeAnalog (salva em flow)",
+        "func": "// Recebe valor analógico no msg.payload\nlet v = msg.payload;\nif (typeof v === 'string') { v = v.trim(); v = Number(v); }\nif (isNaN(v)) { return null; }\nflow.set('analogico', v);\n// não envia mensagem adiante; apenas guarda o último valor analógico\nreturn null;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "mqtt_in_digital",
+        "type": "mqtt in",
+        "z": "flow_mqtt_mongo_1",
+        "name": "Digital In (esp32/sensorChuva)",
+        "topic": "esp32/sensorChuva",
+        "qos": "0",
+        "datatype": "auto",
+        "broker": "dfb4e51f59f1317e",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 160,
+        "y": 240,
+        "wires": [
+            [
+                "build_doc_fn"
+            ]
+        ]
+    },
+    {
+        "id": "build_doc_fn",
+        "type": "function",
+        "z": "flow_mqtt_mongo_1",
+        "name": "buildDocAndInsert",
+        "func": "// Recebe msg.payload do tópico digital (ex: \"CHUVA\" ou \"SECO\")\nlet estado = (typeof msg.payload === 'string') ? msg.payload.trim() : String(msg.payload);\nlet analogico = flow.get('analogico') || null;\nif (analogico !== null && (isNaN(analogico) || analogico < 0)) { analogico = null; }\n\n// Debounce/evita inserções repetidas do mesmo estado em curto intervalo (30s)\nlet ultimo = flow.get('ultimoEstado') || null;\nlet ultimoTS = flow.get('ultimoTS') || 0;\nlet now = Date.now();\nif (ultimo === estado && (now - ultimoTS) < 30000) { return null; }\nflow.set('ultimoEstado', estado);\nflow.set('ultimoTS', now);\n\nmsg.payload = {\n    estado: estado,\n    analogico: analogico,\n    data: new Date()\n};\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 420,
+        "y": 240,
+        "wires": [
+            [
+                "mongodb_out_insert"
+            ]
+        ]
+    },
+    {
+        "id": "mongodb_out_insert",
+        "type": "mongodb out",
+        "z": "flow_mqtt_mongo_1",
+        "mongodb": "mongodb_config",
+        "name": "MongoDB Insert (chuva)",
+        "collection": "chuva",
+        "payonly": true,
+        "upsert": false,
+        "multi": false,
+        "operation": "insert",
+        "x": 640,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "debug_node",
+        "type": "debug",
+        "z": "flow_mqtt_mongo_1",
+        "name": "MongoDB Debug (payload)",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "x": 880,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "dfb4e51f59f1317e",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "mqtt://broker.hivemq.com",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "mongodb_config",
+        "type": "mongodb",
+        "hostname": "localhost",
+        "connectOptions": "",
+        "port": "27017",
+        "db": "EstacaoMeteorologica",
+        "name": "Local MongoDB (configurar)"
+    },
+    {
+        "id": "6adf9ea5e5e3be7b",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-node-mongodb": "0.2.5"
+        }
+    }
+]
