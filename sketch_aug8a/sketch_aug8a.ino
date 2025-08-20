@@ -1,24 +1,26 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <HTTPClient.h>
+#include <string.h>
 
-const char* ssid = "seuSsid";  
-const char* password = "suaSenha"; 
+const char* ssid = "meussid";
+const char* password = "minhasenha";
 const char* mqtt_server = "broker.hivemq.com";
-const char* topic_status = "esp32/sensorChuva";
 const char* topic_analog = "esp32/sensorChuva/analog";
 const char* topic_comando = "esp32/controle";
-const char* botToken = "seuBotToken"; 
-const char* chatId = "seuchatId";    
+const char* topic_seco = "esp32/sensorChuva/intensidade/seco";
+const char* topic_leve = "esp32/sensorChuva/intensidade/leve";
+const char* topic_moderada = "esp32/sensorChuva/intensidade/moderada";
+const char* topic_forte = "esp32/sensorChuva/intensidade/forte";
+const char* botToken = "meubottoken";
+const char* chatId = "meuchatid";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-#define CHUVA_DIGITAL_PIN 23
-#define CHUVA_ANALOG_PIN 36
-#define LED_PIN 2  
-
-String estadoAnterior = "SECO";
+#define LED_PIN 2
+String intensidadeAtual = "";
+String intensidadeAnterior = "";
 
 void setup_wifi() {
   Serial.begin(115200);
@@ -36,7 +38,10 @@ void setup_wifi() {
 void enviarAlertaTelegram(const String& mensagem) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    String url = "https://api.telegram.org/bot" + String(botToken) + "/sendMessage?chat_id=" + String(chatId) + "&text=" + mensagem;
+    String url = "https://api.telegram.org/bot" + String(botToken) +
+                 "/sendMessage?chat_id=" + String(chatId) +
+                 "&text=" + mensagem;
+
     Serial.print("Enviando alerta: ");
     Serial.println(mensagem);
 
@@ -57,7 +62,7 @@ void enviarAlertaTelegram(const String& mensagem) {
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
-  String mensagem;
+  String mensagem = "";
   for (unsigned int i = 0; i < length; i++) {
     mensagem += (char)payload[i];
   }
@@ -67,12 +72,38 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("]: ");
   Serial.println(mensagem);
 
-  if (mensagem == "LIGAR") {
-    Serial.println("LED ligado!");
-    digitalWrite(LED_PIN, HIGH);
-  } else if (mensagem == "DESLIGAR") {
-    Serial.println("LED desligado!");
-    digitalWrite(LED_PIN, LOW);
+  if (strcmp(topic, topic_comando) == 0) {
+    if (mensagem == "LIGAR") {
+      digitalWrite(LED_PIN, HIGH);
+      Serial.println("LED ligado!");
+    } else if (mensagem == "DESLIGAR") {
+      digitalWrite(LED_PIN, LOW);
+      Serial.println("LED desligado!");
+    }
+  } else if (
+    strcmp(topic, topic_forte) == 0 ||
+    strcmp(topic, topic_moderada) == 0 ||
+    strcmp(topic, topic_leve) == 0 ||
+    strcmp(topic, topic_seco) == 0
+  ) {
+    intensidadeAtual = mensagem;
+
+    Serial.print("Intensidade recebida: ");
+    Serial.println(intensidadeAtual);
+
+    if (intensidadeAtual == "forte" || intensidadeAtual == "moderada") {
+      digitalWrite(LED_PIN, HIGH);
+    } else {
+      digitalWrite(LED_PIN, LOW);
+    }
+
+    if (intensidadeAtual != intensidadeAnterior) {
+      if (intensidadeAtual != "seco") {
+        String alerta = "Chuva detectada! Intensidade: " + intensidadeAtual;
+        enviarAlertaTelegram(alerta);
+      }
+      intensidadeAnterior = intensidadeAtual;
+    }
   }
 }
 
@@ -81,7 +112,11 @@ void reconnect() {
     Serial.print("Tentando conectar ao MQTT...");
     if (client.connect("ESP32ClientHHCDSHCJ")) {
       Serial.println("Conectado.");
-      client.subscribe(topic_comando); 
+      client.subscribe(topic_comando);
+      client.subscribe(topic_seco);
+      client.subscribe(topic_leve);
+      client.subscribe(topic_moderada);
+      client.subscribe(topic_forte);
     } else {
       Serial.print("Falha, rc=");
       Serial.print(client.state());
@@ -92,9 +127,8 @@ void reconnect() {
 }
 
 void setup() {
-  pinMode(CHUVA_DIGITAL_PIN, INPUT);
   pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW); 
+  digitalWrite(LED_PIN, LOW);
 
   setup_wifi();
   client.setServer(mqtt_server, 1883);
@@ -107,28 +141,10 @@ void loop() {
   }
   client.loop();
 
-  int statusDigital = digitalRead(CHUVA_DIGITAL_PIN);
-  Serial.print("Leitura digital do sensor: ");
-  Serial.println(statusDigital);
-  String statusAtual = (statusDigital == HIGH) ? "SECO" : "CHUVA";
-  Serial.print("Estado atual: ");
-  Serial.println(statusAtual);
-  client.publish(topic_status, statusAtual.c_str());
-
-  int valorAnalogico = analogRead(CHUVA_ANALOG_PIN);
+  int valorAnalogico = analogRead(36);
   Serial.print("Leitura analógica do sensor: ");
   Serial.println(valorAnalogico);
   client.publish(topic_analog, String(valorAnalogico).c_str());
-  
-  if (statusAtual != estadoAnterior && statusAtual == "CHUVA") {
-    enviarAlertaTelegram("Está chovendo!");
-  }
-
-  estadoAnterior = statusAtual;
 
   delay(5000);
 }
-
-
-
-

@@ -7,7 +7,7 @@
         "info": ""
     },
     {
-        "id": "9c80ee7c211fba1e",
+        "id": "9ec2dc44b2c8ecbb",
         "type": "mqtt in",
         "z": "b26f23f8c9d1a25c",
         "name": "Intensidade da Chuva",
@@ -19,16 +19,16 @@
         "rap": false,
         "rh": 0,
         "inputs": 0,
-        "x": 150,
-        "y": 120,
+        "x": 640,
+        "y": 100,
         "wires": [
             [
-                "fbff8b823b4a1651"
+                "e1cca494748c3861"
             ]
         ]
     },
     {
-        "id": "fbff8b823b4a1651",
+        "id": "e1cca494748c3861",
         "type": "ui_chart",
         "z": "b26f23f8c9d1a25c",
         "name": "Gráfico Intensidade",
@@ -56,14 +56,39 @@
             "#ff7f0e"
         ],
         "outputs": 1,
-        "x": 420,
-        "y": 120,
+        "x": 910,
+        "y": 100,
         "wires": [
             []
         ]
     },
     {
-        "id": "09c89edfd6327294",
+        "id": "7c1f34023c8c28b8",
+        "type": "ui_gauge",
+        "z": "b26f23f8c9d1a25c",
+        "name": "Intensidade da Chuva",
+        "group": "c28fcad1f46dce84",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Intensidade da Chuva",
+        "label": "Chuva",
+        "format": "{{msg.payload}}",
+        "min": "0",
+        "max": "4095",
+        "colors": [
+            "#00FF00",
+            "#FFFF00",
+            "#FFA500",
+            "#FF0000"
+        ],
+        "x": 910,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "20af487d5f711a61",
         "type": "mqtt in",
         "z": "b26f23f8c9d1a25c",
         "name": "Estado CHUVA/SECO",
@@ -75,16 +100,16 @@
         "rap": false,
         "rh": 0,
         "inputs": 0,
-        "x": 150,
-        "y": 200,
+        "x": 640,
+        "y": 180,
         "wires": [
             [
-                "040fc7db59f11a33"
+                "fcf008c9c08b282f"
             ]
         ]
     },
     {
-        "id": "040fc7db59f11a33",
+        "id": "fcf008c9c08b282f",
         "type": "ui_text",
         "z": "b26f23f8c9d1a25c",
         "group": "c28fcad1f46dce84",
@@ -95,75 +120,28 @@
         "label": "Estado do Sensor:",
         "format": "{{msg.payload}}",
         "layout": "row-spread",
-        "className": "",
-        "x": 420,
-        "y": 200,
+        "className": "{{msg.className}}",
+        "x": 910,
+        "y": 180,
         "wires": []
     },
     {
-        "id": "b1a1e5f2b6e9e7f1",
-        "type": "ui_button",
+        "id": "933d44462d16042e",
+        "type": "ui_switch",
         "z": "b26f23f8c9d1a25c",
-        "name": "Ligar LED",
-        "group": "e4f1d7be9f2c47c4",
-        "order": 1,
-        "width": 3,
-        "height": 1,
-        "passthru": false,
-        "label": "Ligar LED",
-        "tooltip": "",
-        "color": "",
-        "bgcolor": "#00cc00",
-        "icon": "fa-lightbulb-o",
-        "payload": "LIGAR",
-        "payloadType": "str",
-        "topic": "",
-        "x": 240,
-        "y": 360,
-        "wires": [
-            [
-                "5d4fccc68e4aa49f"
-            ]
-        ]
-    },
-    {
-        "id": "e5e7fcdcf3c9278d",
-        "type": "ui_button",
-        "z": "b26f23f8c9d1a25c",
-        "name": "Desligar LED",
-        "group": "e4f1d7be9f2c47c4",
-        "order": 2,
-        "width": 3,
-        "height": 1,
-        "passthru": false,
-        "label": "Desligar LED",
-        "tooltip": "",
-        "color": "",
-        "bgcolor": "#cc0000",
-        "icon": "fa-power-off",
-        "payload": "DESLIGAR",
-        "payloadType": "str",
-        "topic": "",
-        "x": 250,
-        "y": 420,
-        "wires": [
-            [
-                "5d4fccc68e4aa49f"
-            ]
-        ]
-    },
-    {
-        "id": "5d4fccc68e4aa49f",
-        "type": "mqtt out",
-        "z": "b26f23f8c9d1a25c",
-        "name": "Enviar comando LED",
+        "name": "Controle LED",
+        "label": "LED",
+        "group": "c28fcad1f46dce84",
+        "order": 4,
+        "width": "4",
+        "height": "1",
+        "passthru": true,
         "topic": "esp32/controle",
-        "qos": "",
-        "retain": "",
-        "broker": "67e1e2eebc4d7a3e",
-        "x": 490,
-        "y": 390,
-        "wires": []
+        "x": 910,
+        "y": 340,
+        "wires": [
+            []
+        ]
     },
     {
         "id": "d5ad1b382c0dcf63",
@@ -198,28 +176,6 @@
         "className": ""
     },
     {
-        "id": "e4f1d7be9f2c47c4",
-        "type": "ui_group",
-        "name": "Controle do LED",
-        "tab": "bcec116f9b6a1e7d",
-        "order": 1,
-        "disp": true,
-        "width": 6
-    },
-    {
-        "id": "67e1e2eebc4d7a3e",
-        "type": "mqtt-broker",
-        "name": "HiveMQ",
-        "broker": "broker.hivemq.com",
-        "port": "1883",
-        "clientid": "",
-        "autoConnect": true,
-        "usetls": false,
-        "protocolVersion": "4",
-        "keepalive": "60",
-        "cleansession": true
-    },
-    {
         "id": "9c5ad82663349662",
         "type": "ui_tab",
         "name": "Dashboard",
@@ -228,14 +184,7 @@
         "hidden": false
     },
     {
-        "id": "bcec116f9b6a1e7d",
-        "type": "ui_tab",
-        "name": "Sensor de Chuva",
-        "icon": "dashboard",
-        "order": 1
-    },
-    {
-        "id": "cb3fc9a4e406f85f",
+        "id": "9489c2566838c00a",
         "type": "global-config",
         "env": [],
         "modules": {
